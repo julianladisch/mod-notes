@@ -29,7 +29,7 @@ import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.Notification;
-import org.folio.rest.jaxrs.resource.NotesResource;
+import org.folio.rest.jaxrs.resource.Notes;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
@@ -50,7 +50,7 @@ import org.z3950.zing.cql.cql2pgjson.SchemaException;
 
 
 @java.lang.SuppressWarnings({"squid:S1192"}) // This can be removed once John sets SQ up properly
-public class NotesResourceImpl implements NotesResource {
+public class NotesResourceImpl implements Notes {
   private final Logger logger = LoggerFactory.getLogger("mod-notes");
   private final Messages messages = Messages.getInstance();
   public static final String NOTE_TABLE = "note_data";
@@ -154,7 +154,7 @@ public class NotesResourceImpl implements NotesResource {
       if (userId == null || userId.isEmpty()) {
         logger.error("No userId for getNotesSelf");
         asyncResultHandler.handle(succeededFuture(GetNotesResponse
-          .withPlainBadRequest("No UserId")));
+          .respond400WithTextPlain("No UserId")));
         return;
       }
       String userQuery = "metadata.createdByUserId=\"" + userId + "\"";
@@ -216,7 +216,7 @@ public class NotesResourceImpl implements NotesResource {
             Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
             notes.setTotalRecords(totalRecords);
             asyncResultHandler.handle(succeededFuture(
-              GetNotesResponse.withJsonOK(notes)));
+              GetNotesResponse.respond200WithApplicationJson(notes)));
           } else {
             ValidationHelper.handleError(reply.cause(), asyncResultHandler);
           }
@@ -265,7 +265,7 @@ public class NotesResourceImpl implements NotesResource {
           }
         } else { // should not happen
           asyncResultHandler.handle(
-            succeededFuture(PostNotesResponse.withPlainInternalServerError(
+            succeededFuture(PostNotesResponse.respond500WithTextPlain(
                 messages.getMessage(lang, MessageConsts.InternalServerError))));
         }
       });
@@ -283,7 +283,7 @@ public class NotesResourceImpl implements NotesResource {
     if (userId == null) {
       logger.error("No userid header");
       asyncResultHandler.handle(succeededFuture(PostNotesResponse
-        .withPlainBadRequest("No " + RestVerticle.OKAPI_USERID_HEADER
+        .respond400WithTextPlain("No " + RestVerticle.OKAPI_USERID_HEADER
           + ". Can not look up user")));
       return;
     }
@@ -300,7 +300,7 @@ public class NotesResourceImpl implements NotesResource {
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
       asyncResultHandler.handle(
-        succeededFuture(PostNotesResponse.withPlainInternalServerError(
+        succeededFuture(PostNotesResponse.respond500WithTextPlain(
             messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }
@@ -333,7 +333,7 @@ public class NotesResourceImpl implements NotesResource {
           logger.error("User lookup failed for " + userId + ". Missing fields");
           logger.error(Json.encodePrettily(resp));
           asyncResultHandler.handle(succeededFuture(PostNotesResponse
-            .withPlainBadRequest("User lookup failed. "
+            .respond400WithTextPlain("User lookup failed. "
               + "Missing fields in " + usr)));
         }
         break;
@@ -341,21 +341,21 @@ public class NotesResourceImpl implements NotesResource {
         logger.error("User lookup failed for " + userId);
         logger.error(Json.encodePrettily(resp));
         asyncResultHandler.handle(succeededFuture(PostNotesResponse
-          .withPlainBadRequest("User lookup failed. "
+          .respond400WithTextPlain("User lookup failed. "
             + "Can not find user " + userId)));
         break;
       case 403:
         logger.error("User lookup failed for " + userId);
         logger.error(Json.encodePrettily(resp));
         asyncResultHandler.handle(succeededFuture(PostNotesResponse
-          .withPlainBadRequest("User lookup failed with 403. " + userId
+          .respond400WithTextPlain("User lookup failed with 403. " + userId
             + " " + Json.encode(resp.getError()))));
         break;
       default:
         logger.error("User lookup failed with " + resp.getCode());
         logger.error(Json.encodePrettily(resp));
         asyncResultHandler.handle(
-          succeededFuture(PostNotesResponse.withPlainInternalServerError(
+          succeededFuture(PostNotesResponse.respond500WithTextPlain(
             messages.getMessage(lang, MessageConsts.InternalServerError))));
         break;
     }
@@ -370,7 +370,7 @@ public class NotesResourceImpl implements NotesResource {
         pn5InsertNote(context, tenantId, note, asyncResultHandler);
       } else { // all errors map down to internal errors. They have been logged
         asyncResultHandler.handle(
-          succeededFuture(PostNotesResponse.withPlainInternalServerError(
+          succeededFuture(PostNotesResponse.respond500WithTextPlain(
               res.cause().getMessage())));
       }
     });
@@ -389,7 +389,7 @@ public class NotesResourceImpl implements NotesResource {
           OutStream stream = new OutStream();
           stream.setData(note);
           asyncResultHandler.handle(succeededFuture(PostNotesResponse
-            .withJsonCreated(LOCATION_PREFIX + ret, stream)));
+            .respond201WithApplicationJson(LOCATION_PREFIX + ret, stream)));
         } else {
           ValidationHelper.handleError(reply.cause(), asyncResultHandler);
         }
@@ -513,16 +513,16 @@ public class NotesResourceImpl implements NotesResource {
     getOneNote(id, okapiHeaders, context, res -> {
       if (res.succeeded()) {
         asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-          .withJsonOK(res.result())));
+          .respond200WithApplicationJson(res.result())));
       } else {
         switch (res.getType()) {
           case NOT_FOUND:
             asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-              .withPlainNotFound(res.cause().getMessage())));
+              .respond404WithTextPlain(res.cause().getMessage())));
             break;
           case USER: // bad request
             asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-              .withPlainBadRequest(res.cause().getMessage())));
+              .respond400WithTextPlain(res.cause().getMessage())));
             break;
           case FORBIDDEN:
             asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
@@ -534,7 +534,7 @@ public class NotesResourceImpl implements NotesResource {
               msg = messages.getMessage(lang, MessageConsts.InternalServerError);
             }
             asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-              .withPlainInternalServerError(msg)));
+              .respond500WithTextPlain(msg)));
             break;
         }
       }
@@ -555,11 +555,11 @@ public class NotesResourceImpl implements NotesResource {
           // ValidationHelper can not handle these error types
           case NOT_FOUND:
             asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-              .withPlainNotFound(res.cause().getMessage())));
+              .respond404WithTextPlain(res.cause().getMessage())));
             break;
           case USER: // bad request
             asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-              .withPlainBadRequest(res.cause().getMessage())));
+              .respond400WithTextPlain(res.cause().getMessage())));
             break;
           case FORBIDDEN:
             asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
@@ -584,12 +584,12 @@ public class NotesResourceImpl implements NotesResource {
         if (reply.succeeded()) {
           if (reply.result().getUpdated() == 1) {
             asyncResultHandler.handle(succeededFuture(
-              DeleteNotesByIdResponse.withNoContent()));
+              DeleteNotesByIdResponse.respond204()));
           } else {
             logger.error(messages.getMessage(lang,
               MessageConsts.DeletedCountError, 1, reply.result().getUpdated()));
             asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-              .withPlainNotFound(messages.getMessage(lang,
+              .respond404WithTextPlain(messages.getMessage(lang,
                 MessageConsts.DeletedCountError, 1, reply.result().getUpdated()))));
           }
         } else {
@@ -614,7 +614,7 @@ public class NotesResourceImpl implements NotesResource {
       Errors valErr = ValidationHelper.createValidationErrorMessage("id", note.getId(),
         "Can not change Id");
       asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-        .withJsonUnprocessableEntity(valErr)));
+        .respond422WithApplicationJson(valErr)));
       return;
     }
 
@@ -631,11 +631,11 @@ public class NotesResourceImpl implements NotesResource {
         switch (res.getType()) {
           case NOT_FOUND:
             asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-              .withPlainNotFound(res.cause().getMessage())));
+              .respond404WithTextPlain(res.cause().getMessage())));
             break;
           case USER: // bad request
             asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-              .withPlainBadRequest(res.cause().getMessage())));
+              .respond400WithTextPlain(res.cause().getMessage())));
             break;
           case FORBIDDEN:
             asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
@@ -647,7 +647,7 @@ public class NotesResourceImpl implements NotesResource {
               msg = messages.getMessage(lang, MessageConsts.InternalServerError);
             }
             asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-              .withPlainInternalServerError(msg)));
+              .respond500WithTextPlain(msg)));
             break;
         }
       } else { // found the note. put it in the db
@@ -671,7 +671,7 @@ public class NotesResourceImpl implements NotesResource {
         putNotesById3Update(id, lang, note, okapiHeaders, context, asyncResultHandler);
       } else { // all errors map down to internal errors. They have been logged
         asyncResultHandler.handle(
-          succeededFuture(PostNotesResponse.withPlainInternalServerError(
+          succeededFuture(PostNotesResponse.respond500WithTextPlain(
               res.cause().getMessage())));
       }
     });
@@ -689,11 +689,11 @@ public class NotesResourceImpl implements NotesResource {
         if (reply.succeeded()) {
           if (reply.result().getUpdated() == 0) {
             asyncResultHandler.handle(succeededFuture(
-              PutNotesByIdResponse.withPlainInternalServerError(
+              PutNotesByIdResponse.respond500WithTextPlain(
                 messages.getMessage(lang, MessageConsts.NoRecordsUpdated))));
           } else {
             asyncResultHandler.handle(succeededFuture(
-              PutNotesByIdResponse.withNoContent()));
+              PutNotesByIdResponse.respond204()));
           }
         } else {
           ValidationHelper.handleError(reply.cause(), asyncResultHandler);
