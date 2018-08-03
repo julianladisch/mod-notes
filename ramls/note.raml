@@ -36,7 +36,6 @@ resourceTypes:
       schemaItem: note
       exampleCollection: !include examples/noteCollection.sample
       exampleItem: !include examples/note.sample
-
   post:
     is: [ validate ]
   get:
@@ -65,7 +64,7 @@ resourceTypes:
     description: Get, Delete or Update a specific note
     type:
       collection-item:
-        type: note
+        schema: note
         exampleItem: !include examples/note.sample
     get:
       is: [ validate ]
