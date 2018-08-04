@@ -169,7 +169,7 @@ public class NotesResourceImpl implements Notes {
       logger.error("No " + RestVerticle.OKAPI_HEADER_PERMISSIONS
         + " - check notes.domain.* permissions");
       asyncResultHandler.handle(succeededFuture(GetNotesResponse
-        .withPlainUnauthorized("No notes.domain.* permissions")));
+        .respond401WithTextPlain("No notes.domain.* permissions")));
       return;
     }
     boolean allseen = false;
@@ -250,7 +250,7 @@ public class NotesResourceImpl implements Notes {
     }
     if (!noteDomainPermission(domain, okapiHeaders)) {
       asyncResultHandler.handle(succeededFuture(PostNotesResponse
-        .withPlainUnauthorized("No permission notes.domain." + domain)));
+        .respond401WithTextPlain("No permission notes.domain." + domain)));
       return;
     }
     // Get the creator names, if not there
@@ -526,7 +526,7 @@ public class NotesResourceImpl implements Notes {
             break;
           case FORBIDDEN:
             asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-              .withPlainUnauthorized(res.cause().getMessage())));
+              .respond401WithTextPlain(res.cause().getMessage())));
             break;
           default: // typically INTERNAL
             String msg = res.cause().getMessage();
@@ -563,7 +563,7 @@ public class NotesResourceImpl implements Notes {
             break;
           case FORBIDDEN:
             asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-              .withPlainUnauthorized(res.cause().getMessage())));
+              .respond401WithTextPlain(res.cause().getMessage())));
             break;
           default: // typically INTERNAL
             String msg = res.cause().getMessage();
@@ -623,7 +623,7 @@ public class NotesResourceImpl implements Notes {
     String newDomain = note.getDomain();
     if (!noteDomainPermission(newDomain, okapiHeaders)) {
       asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-        .withPlainUnauthorized("No permission notes.domain." + newDomain)));
+        .respond401WithTextPlain("No permission notes.domain." + newDomain)));
       return;
     }
     getOneNote(id, okapiHeaders, vertxContext, res -> {
@@ -639,7 +639,7 @@ public class NotesResourceImpl implements Notes {
             break;
           case FORBIDDEN:
             asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-              .withPlainUnauthorized(res.cause().getMessage())));
+              .respond401WithTextPlain(res.cause().getMessage())));
             break;
           default: // typically INTERNAL
             String msg = res.cause().getMessage();
