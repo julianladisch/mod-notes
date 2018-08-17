@@ -41,7 +41,6 @@ import org.folio.rest.tools.client.HttpClientFactory;
 import org.folio.rest.tools.client.interfaces.HttpClientInterface;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
-import org.folio.rest.tools.utils.OutStream;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
@@ -384,12 +383,11 @@ public class NotesResourceImpl implements Notes {
     PostgresClient.getInstance(context.owner(), tenantId)
       .save(NOTE_TABLE, id, note, reply -> {
         if (reply.succeeded()) {
-          Object ret = reply.result();
-          note.setId((String) ret);
-          OutStream stream = new OutStream();
-          stream.setData(note);
+          String ret = reply.result();
+          note.setId(ret);
           asyncResultHandler.handle(succeededFuture(PostNotesResponse
-            .respond201WithApplicationJson(LOCATION_PREFIX + ret, stream)));
+            .respond201WithApplicationJson(note,
+              PostNotesResponse.headersFor201().withLocation(LOCATION_PREFIX + ret))));
         } else {
           ValidationHelper.handleError(reply.cause(), asyncResultHandler);
         }
@@ -710,7 +708,7 @@ public class NotesResourceImpl implements Notes {
   public void postNotesSelf(String lang, Note entity,
     Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) throws Exception {
+    Context vertxContext) {
     throw new UnsupportedOperationException("Not supported");
   }
 
