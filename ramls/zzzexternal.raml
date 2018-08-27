@@ -1,0 +1,16 @@
+#%RAML 0.8
+
+title: E-book API
+baseUri: http://api.example.com/{version}
+version: v1
+
+schemas:
+  - schedule: !include schedule.json
+
+/zzzexternal:
+  get:
+  post:
+    body:
+      application/json:
+        schema: schedule
+
