@@ -316,6 +316,32 @@
         <version>1.8</version>
         <executions>
           <execution>
+            <id>delete-ZzzexternalResource</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <delete file="${project.build.directory}/generated-sources/raml-jaxrs/org/folio/rest/jaxrs/resource/ZzzexternalResource.java" />
+              </target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>delete-ZzzexternalResource2</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <delete file="${project.build.directory}/classes/apidocs/raml/zzzexternal.raml" />
+                <delete file="${project.build.directory}/classes/ramls/zzzexternal.raml" />
+              </target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>fix-raml</id>
             <phase>prepare-package</phase>
             <configuration>
               <target>
